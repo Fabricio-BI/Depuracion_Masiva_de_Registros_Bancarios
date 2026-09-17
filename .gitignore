@@ -1,0 +1,32 @@
+# --- Entornos virtuales ---
+.venv/
+venv/
+env/
+
+# --- Cache y bytecode de Python ---
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+*.egg-info/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+
+# --- Editor: Zed ---
+.zed/
+
+# --- Sistema operativo ---
+.DS_Store
+Thumbs.db
+
+# --- Logs generados por la app ---
+log/*.log
+
+# --- Datos ---
+# Los archivos de entrada en data/raw/ SÍ se versionan (datos de prueba
+# para que quien clone el repo pueda validar el pipeline directamente).
+
+# Los resultados generados por el pipeline no deberían versionarse
+# (la carpeta se crea automáticamente en tiempo de ejecución vía mkdir):
+data/processed/*.xlsx

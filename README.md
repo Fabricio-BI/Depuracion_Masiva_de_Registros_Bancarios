@@ -23,33 +23,87 @@ El resultado final es un archivo Excel con 6 pestañas que resume todo el estado
  
 ---
 
-
 ## 🗂️ Estructura del proyecto
 
 ```
-conciliacion-bancaria/
+Depuracion_Masiva_de_Registros_Bancarios/
 │
-└── 01_Datos_Entrada/
-│   ├── mayor_contable.xlsx          # Mayor contable de la empresa
-│   └── estado_cuenta.xlsx           # Estado de cuenta bancario (2 pestañas: Guayaquil, Pacifico)
-│ 
-└── 02_Resultado/
-│   └── concilaicon_resultado.xlsx   # Archivo final de la conciliacion(incluye informe final)
+├── data/
+│   ├── raw/
+│   │   ├── mayor_contable.xlsx      # Mayor contable de la empresa
+│   │   └── estado_cuenta.xlsx       # Estado de cuenta bancario (2 pestañas: Guayaquil, Pacífico)
+│   └── processed/
+│       └── conciliacion_resultado.xlsx   # Archivo final (se genera automáticamente)
 │
-└── conciliacion.py                  # Script que contiene todas las funciones usadas en el proyecto
+├── image/                           # Capturas de referencia usadas en este README
 │
-└── main.py                          # Script principal con todo el flujo
+├── log/
+│   └── conc.log                     # Log de ejecución (se genera automáticamente)
 │
+├── src/
+│   ├── project_config.py            # Rutas y constantes del proyecto
+│   ├── bank_reconciliation.py        # Carga de datos, cruce exacto y fuzzy matching
+│   ├── excel_exporter.py            # Exportación del Excel final con formato
+│   ├── logging_config.py            # Configuración del logging
+│
+├── main.py                          # Punto de entrada: orquesta todo el flujo
+├── requirements.txt                 # Dependencias del proyecto
+├── .gitignore
 └── README.md                        # Este archivo
-
 ```
+
+---
+
+## 🚀 Instalación y ejecución
+
+### Requisitos previos
+- Python 3.10 o superior
+
+### Pasos
+
+1. **Clonar el repositorio**
+   ```bash
+   git clone https://github.com/Fabricio-BI/Depuracion_Masiva_de_Registros_Bancarios.git
+   cd Depuracion_Masiva_de_Registros_Bancarios
+   ```
+
+2. **Crear y activar un entorno virtual**
+   ```bash
+   python -m venv .venv
+
+   # Linux / macOS
+   source .venv/bin/activate
+
+   # Windows
+   .venv\Scripts\activate
+   ```
+
+3. **Instalar las dependencias**
+   ```bash
+   pip install -r requirements.txt
+   ```
+
+4. **Verificar los datos de entrada**
+   Los archivos de prueba ya están incluidos en `data/raw/`:
+   - `mayor_contable.xlsx`
+   - `estado_cuenta.xlsx`
+
+   Si quieres usar tus propios datos, reemplaza estos archivos manteniendo el mismo nombre y estructura de columnas (ver sección "Estructura de los archivos" más abajo).
+
+5. **Ejecutar el proceso**
+   ```bash
+   python main.py
+   ```
+
+   La carpeta `data/processed/` se crea automáticamente si no existe.
+
+6. **Revisar el resultado**
+   El archivo `data/processed/conciliacion_resultado.xlsx` se genera con las 6 pestañas descritas en este README.
 
 ---
 
 ## 📁 Nota sobre los datos de ejemplo
 Los conjuntos de datos incluidos en este repositorio han sido generados de manera ficticia para simular un escenario operativo real de una empresa con alta transaccionalidad. La información contenida no corresponde a transacciones, entidades o cuentas reales; su uso es estrictamente académico y técnico, con el fin de demostrar la funcionalidad de la solución y la robustez del código desarrollado.
-
-```
 
 ## 📁 Estructura de los archivos
 
@@ -77,10 +131,7 @@ Los conjuntos de datos incluidos en este repositorio han sido generados de maner
 | `Fecha valor` | Fecha de acreditación |
 | `Importe` | Importe del depósito |
 
-```
-
 ---
-
 
 ## Flujo del proceso
 
@@ -167,10 +218,12 @@ Banco:  "ABC-9999"
 Score:  23  ✗  (no supera umbral)
 ```
 
-El umbral por defecto es **80**. Puedes ajustarlo en el notebook según la calidad de tus datos:
+El umbral por defecto es **80**. Puedes ajustarlo según la calidad de tus datos modificando el parámetro `umbral` en la llamada a `cruce_fuzzy()` dentro de `main.py`:
 
 ```python
-UMBRAL = 80  # Aumentar para mayor precisión, bajar para mayor cobertura
+df_fuzzy_matches = cruce_fuzzy(
+    df_partidas_pendientes, df_depositos_sobrantes, umbral=80  # Aumentar para mayor precisión, bajar para mayor cobertura
+)
 ```
 
 ---
@@ -190,7 +243,7 @@ Vista ejecutiva con el estado global de la conciliación: total de registros, co
 **¿Para qué sirve?**
 Es la primera hoja que debe ver el CFO o gerente financiero. En 30 segundos permite saber si la conciliación cerró bien, cuánto importe quedó sin cruzar y si hay diferencias que requieren atención. Elimina la necesidad de revisar hoja por hoja para tener una foto del estado general.
 
-![Resumen](Docs/Informe%20Final.JPG)
+![Resumen](image/Informe%20Final.JPG)
  
 ---
  
@@ -202,7 +255,7 @@ Todos los registros del mayor contable con las columnas del banco añadidas dond
 **¿Para qué sirve?**
 Permite al contador verificar, registro por registro del mayor, si cada movimiento contable tiene su correspondiente acreditación bancaria. El color amarillo indica qué coincidencias fueron aproximadas y merecen una revisión rápida antes de cerrar el mes. Los registros sin color y sin datos del banco son los que quedaron sin match.
 
- ![Resumen](Docs/Muestra%20bancos.JPG)
+![Resumen](image/Muestra%20bancos.JPG)
 ---
  
 ### 🟩 Pestaña 3 — `Banco vs Mayor`
@@ -214,7 +267,7 @@ Todos los movimientos del estado de cuenta bancario con las columnas del mayor a
 Es el cruce en dirección contraria: confirma que cada depósito que entró al banco tiene su registro contable correspondiente. Útil para detectar depósitos que el banco registró pero que aún no han sido contabilizados en el mayor — un caso frecuente en cierres de mes.
 
 
- ![Resumen](Docs/Muestra%20mayor.JPG)
+![Resumen](image/Muestra%20mayor.JPG)
 ---
  
 ### 🟧 Pestaña 4 — `Partidas Pendientes`
@@ -226,7 +279,7 @@ Registros del mayor contable que no encontraron coincidencia en el banco despué
 Esta hoja es la lista de trabajo del contador. Cada registro aquí representa un movimiento contabilizado que no se refleja en el estado de cuenta — puede ser un cheque no cobrado, una transferencia en tránsito, un error de registro o una partida que requiere investigación. Es el insumo directo para las notas de conciliación.
 
 
- ![Resumen](Docs/partidas%20pendientes.JPG)
+![Resumen](image/partidas%20pendientes.JPG)
 ---
  
 ### 🟧 Pestaña 5 — `Depósitos Sobrantes`
@@ -237,7 +290,7 @@ Movimientos del estado de cuenta bancario que no encontraron coincidencia en el 
 **¿Para qué sirve?**
 Representa dinero que llegó al banco pero que aún no está registrado en la contabilidad. Puede tratarse de depósitos de clientes no identificados, cobros automáticos, intereses bancarios o errores del banco. Esta hoja evita que ingresos reales queden fuera de los libros contables al cierre del período.
 
-  ![Resumen](Docs/Depositos%20sobrantes.JPG)
+![Resumen](image/Depositos%20sobrantes.JPG)
 ---
  
 ### 🔍 Pestaña 6 — `Fuzzy Matches`
@@ -248,7 +301,7 @@ Detalle completo de todas las coincidencias encontradas por el algoritmo de fuzz
 **¿Para qué sirve?**
 Es la hoja de auditoría del proceso. Permite revisar exactamente qué cruzó el algoritmo y con qué nivel de confianza. Un score de 95 es casi certero; un score de 81 merece revisión visual. Esta transparencia es clave para que el contador pueda validar o rechazar cada match fuzzy con criterio, y para documentar el proceso ante una auditoría externa.
 
- ![Resumen](Docs/fuzzy.JPG)
+![Resumen](image/fuzzy.JPG)
 
 ---
 
@@ -256,21 +309,13 @@ Es la hoja de auditoría del proceso. Permite revisar exactamente qué cruzó el
 
 Puedes adaptar el código para tu caso de uso:
 
-- **Cambiar el umbral de fuzzy:** Modifica `UMBRAL = 80` en el notebook.
+- **Cambiar el umbral de fuzzy:** Modifica el parámetro `umbral` en la llamada a `cruce_fuzzy()` dentro de `main.py`.
 - **Agregar más bancos:** Añade más pestañas al `estado_cuenta.xlsx` y agrégalas al `pd.concat`.
 - **Tolerancia en importe:** Reemplaza la igualdad exacta de importe por un rango `±0.01` para manejar redondeos.
 - **Normalizar referencias:** Agrega `.str.strip().str.upper()` antes del merge para reducir falsos negativos.
 
 ---
 
-
-
----
-
 ## 👤 Autor
 
 Desarrollado por **Fabricio Coque**
-📧 fabriciocoque@outlook.com
-🌐 [Sitio Web](https://fabriciocoque.github.io/)
-
-> ¿Necesitas este proceso implementado para tu empresa? Contáctame para una consultoría personalizada.
