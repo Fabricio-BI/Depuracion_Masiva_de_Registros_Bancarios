@@ -29,4 +29,8 @@ log/*.log
 
 # Los resultados generados por el pipeline no deberían versionarse
 # (la carpeta se crea automáticamente en tiempo de ejecución vía mkdir):
-data/processed/*.xlsx
+data/processed/
+
+# Archivos de bloqueo de Excel/LibreOffice
+data/processed/*~
+data/processed/*.~lock.*#
